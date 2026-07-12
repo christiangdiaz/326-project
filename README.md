@@ -7,6 +7,6 @@
 
 # Section 2
 
-- communication as needed, daily / every other day via text
-- done for a PR means passing review from other teammate
-- Will resolve disagreements by communicating openly and finding solutions that both are happy with
+- Communication as needed, daily / every other day via text.
+- Done for a PR means passing review from other teammate.
+- Will resolve disagreements by communicating openly and finding solutions that both are happy with.
