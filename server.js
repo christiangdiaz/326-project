@@ -6,6 +6,10 @@ app.get("/", (req, res) => {
     res.send("Maintenance Report Board");
 });
 
+app.get("/reports", (req, res) => {
+    res.send("Maintenance Reports List");
+});
+
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
 });
