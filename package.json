@@ -1,0 +1,25 @@
+{
+  "name": "326-project",
+  "version": "1.0.0",
+  "description": "| Name           | GitHub Username |\r | -------------- | --------------- |\r | Christian Diaz | christiangdiaz  |\r | Yougi Jain     | yougijain       |",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christiangdiaz/326-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/christiangdiaz/326-project/issues"
+  },
+  "homepage": "https://github.com/christiangdiaz/326-project#readme",
+  "type": "module",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
