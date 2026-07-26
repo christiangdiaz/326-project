@@ -17,7 +17,7 @@ Our team is building an apartment maintenance report board where residents submi
 
 # Section 4: How to Get Started
 
-1. Clone the repository ```git clone https://github.com/christiangdiaz/326-project.git```
-2. Install dependencies ```npm install```
-3. Start the server with node ```server.js```
+1. Clone the repository `git clone https://github.com/christiangdiaz/326-project.git`
+2. Install dependencies `npm install`
+3. Start the server with node `server.js`
 4. Finally, visit `http://localhost:3000` to see the home page. Visit `http://localhost:3000/reports` to see the maintenance reports listing page.
