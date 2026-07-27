@@ -28,7 +28,7 @@ Primary action is a resident submitting a maintenance report.
 
 - Visit `http://localhost:3000/reports`
 - Two fields include **Unit number** and **Problem description** 
-- **Submit report** button. This POSTs to `/reports.
+- **Submit report** button. This POSTs to `/reports`.
 - Submission is validated in the service layer. A valid report is saved to `reports.json` with a generated `id` and a default `status` of `Open`, then the page reloads and the new report appears in the **Submitted Reports** list.
 - **Validation:** If a field is missing, the page re-renders with an inline error ("Unit number and description are required.") and an HTTP `400` status — nothing is saved.
 
