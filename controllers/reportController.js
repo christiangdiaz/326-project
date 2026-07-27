@@ -4,17 +4,21 @@ import {
 } from "../services/reportService.js";
 
 export function showReports(req, res) {
-  res.json(getReports());
+  res.render("reports", {
+    reports: getReports(),
+    error: null
+  });
 }
 
 export function createReport(req, res) {
   try {
-    const report = addReport(req.body);
+    addReport(req.body);
 
-    res.status(201).send(
-      `Report submitted for unit ${report.unit}`
-    );
+    res.redirect("/reports");
   } catch (error) {
-    res.status(400).send(error.message);
+    res.status(400).render("reports", {
+      reports: getReports(),
+      error: error.message
+    });
   }
 }
