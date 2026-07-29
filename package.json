@@ -20,6 +20,7 @@
   "homepage": "https://github.com/christiangdiaz/326-project#readme",
   "type": "module",
   "dependencies": {
+    "ejs": "^6.0.1",
     "express": "^5.2.1"
   }
 }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Maintenance Report Board</title>
+</head>
+
+<body>
+  <h1>Maintenance Report Board</h1>
+
+  <% if (error) { %>
+    <p>
+      <strong>Error:</strong>
+      <%= error %>
+    </p>
+  <% } %>
+
+  <form action="/reports" method="POST">
+    <div>
+      <label for="unit">Unit number (ex: 2c):</label>
+
+      <input
+        id="unit"
+        name="unit"
+        type="text"
+      >
+    </div>
+
+    <div>
+      <label for="description">
+        Problem description:
+      </label>
+
+      <textarea
+        id="description"
+        name="description"
+      ></textarea>
+    </div>
+
+    <button type="submit">
+      Submit report
+    </button>
+  </form>
+
+  <h2>Submitted Reports</h2>
+
+  <% if (reports.length === 0) { %>
+    <p>No reports submitted yet.</p>
+  <% } %>
+
+  <% reports.forEach((report) => { %>
+    <article>
+      <h3>Unit <%= report.unit %></h3>
+
+      <p><%= report.description %></p>
+
+      <p>Status: <%= report.status %></p>
+    </article>
+  <% }) %>
+</body>
+</html>

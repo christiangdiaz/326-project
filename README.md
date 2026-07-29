@@ -17,7 +17,23 @@ Our team is building an apartment maintenance report board where residents submi
 
 # Section 4: How to Get Started
 
-1. Clone the repository ```git clone https://github.com/christiangdiaz/326-project.git```
-2. Install dependencies ```npm install```
-3. Start the server with node ```server.js```
-4. Finally, visit `http://localhost:3000` to see the home page. Visit `http://localhost:3000/reports` to see the maintenance reports listing page.
+1. Clone the repository `git clone https://github.com/christiangdiaz/326-project.git`
+2. Install dependencies `npm install`
+3. Start the server with `npm start`
+4. Finally, visit `http://localhost:3000` (or `http://localhost:3000/reports`) to see the Maintenance Report Board.
+
+# Section 5: Feature 1 - Report Submission
+
+Primary action is a resident submitting a maintenance report.
+
+- Visit `http://localhost:3000/reports`
+- Two fields include **Unit number** and **Problem description** 
+- **Submit report** button. This POSTs to `/reports`.
+- Submission is validated in the service layer. A valid report is saved to `reports.json` with a generated `id` and a default `status` of `Open`, then the page reloads and the new report appears in the **Submitted Reports** list.
+- **Validation:** If a field is missing, the page re-renders with an inline error ("Unit number and description are required.") and an HTTP `400` status — nothing is saved.
+
+# System Diagram
+
+
+![System diagram: Browser form submits GET/POST /reports to routes, which call the controller, which calls the service (validation + business rules), which calls the repository — the only layer touching reports.json. The controller renders HTML back to the browser.](assets/system-diagram.png)
+
