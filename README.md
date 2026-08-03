@@ -25,6 +25,7 @@ Our team is building an apartment maintenance report board where residents submi
    - Your own server: set `MONGODB_URI` before starting
 
    The app defaults to `mongodb://127.0.0.1:27017/maintenance_reports`. **No `.env` file and no secrets are required** — if you have MongoDB running on the default port, it just works.
+
 4. Start the server with `npm start`
 5. Finally, visit `http://localhost:3000` (or `http://localhost:3000/reports`) to see the Maintenance Report Board.
 
@@ -35,7 +36,7 @@ To run the test suite: `npm test`
 Primary action is a resident submitting a maintenance report.
 
 - Visit `http://localhost:3000/reports`
-- Two fields include **Unit number** and **Problem description** 
+- Two fields include **Unit number** and **Problem description**
 - **Submit report** button. This POSTs to `/reports`.
 - Submission is validated in the service layer. A valid report is saved to the **MongoDB `reports` collection** with a MongoDB-generated `_id` and a default `status` of `Open`, then the new report appears in the **Submitted Reports** list.
 - **Validation:** If a field is missing, the page re-renders with an inline error ("Unit number and description are required.") and an HTTP `400` status — nothing is saved.
@@ -48,11 +49,11 @@ Primary action is a resident submitting a maintenance report.
 
 **Schema** (`unit`, `description`, `status`, plus `timestamps`):
 
-| Field | Type | Rules |
-| --- | --- | --- |
-| `unit` | String | required, trimmed, max 10 |
-| `description` | String | required, trimmed, max 500 |
-| `status` | String | enum `Open` / `In Progress` / `Resolved`, defaults to `Open`, indexed |
+| Field         | Type   | Rules                                                                 |
+| ------------- | ------ | --------------------------------------------------------------------- |
+| `unit`        | String | required, trimmed, max 10                                             |
+| `description` | String | required, trimmed, max 500                                            |
+| `status`      | String | enum `Open` / `In Progress` / `Resolved`, defaults to `Open`, indexed |
 
 **Operations:** `getAll`, `findById`, `create`, `updateById`, `removeById`.
 
@@ -81,18 +82,34 @@ Rules under test:
 
 `updateReportStatus` and `deleteReport` back the repository's `updateById` and `removeById`, and are the service-layer seam the HTMX interaction calls.
 
+## 3. HTMX interaction
+
+Deleting a maintenance report now uses HTMX instead of reloading the entire page.
+
+Each report has a Delete button with `hx-delete`, which sends a `DELETE /reports/:id` request. The server deletes the report and returns an empty response. HTMX then replaces only that report's `<article>` element, so the rest of the page stays unchanged.
+
+**How to see it:** run the app, visit `http://localhost:3000/reports`, submit a report, then click **Delete**. The report disappears without a full page reload.
+
+## 4. Tailwind visual design
+
+The reports page is now styled using Tailwind utility classes directly in `views/reports.ejs`.
+
+The form and report list use cards, spacing, typography, button states, and a responsive layout. Reports display in one column on smaller screens and switch to two columns at the `sm:` breakpoint.
+
+**How to see it:** visit `http://localhost:3000/reports` and resize the browser window from desktop width to phone width.
+
 # Honest Exceptions
 
 The sprint brief asks us to name any layer above the repository that had to change. Two did, and here is exactly why.
 
 **1. Async propagation reached above the repository.** Mongoose is asynchronous and Sprint 2's repository was synchronous, so `services/reportService.js` and `controllers/reportController.js` both became `async`/`await`. That is a real change above the repository line.
 
-What did *not* change is the layering boundary: no layer above the repository knows a database exists, every function kept its name and arguments, and the controller still talks only to the service. What changed is the calling convention — functions return a Promise instead of a value. Had Sprint 2's repository been Promise-based from the start, nothing above it would have needed to change.
+What did _not_ change is the layering boundary: no layer above the repository knows a database exists, every function kept its name and arguments, and the controller still talks only to the service. What changed is the calling convention — functions return a Promise instead of a value. Had Sprint 2's repository been Promise-based from the start, nothing above it would have needed to change.
 
 **2. The client-facing id.** Sprint 2's template emitted no record identifier at all: the `forEach` took no index and `report.id` was never rendered, so there was no array-position assumption to unwind. The exception shows up where per-record actions need a stable handle — each `<article>` in `views/reports.ejs` now carries `id="report-<%= report._id %>"`, MongoDB's real `_id`. The service's old `id: Date.now()` generation is gone; MongoDB assigns `_id` instead.
 
 # System Diagram
 
+HTMX is used in the browser for the report deletion interaction, while Tailwind utility classes style the rendered EJS page. These do not add additional application layers, so the existing system diagram remains unchanged.
 
 ![System diagram: the browser sends GET/POST /reports to routes, which call the controller, which calls the service (validation and business rules), which calls the repository. The repository is the only layer that talks to MongoDB, using Mongoose per-record operations getAll, findById, create, updateById and removeById. Alongside the service sits the Jest suite, which exercises the real service while replacing the repository with mocks via jest.unstable_mockModule, so no live database is involved. The controller renders HTML back to the browser.](assets/system-diagram.png)
-

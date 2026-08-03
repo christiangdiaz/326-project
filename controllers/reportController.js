@@ -1,6 +1,7 @@
 import {
   getReports,
-  addReport
+  addReport,
+  deleteReport
 } from "../services/reportService.js";
 
 export async function showReports(req, res) {
@@ -20,5 +21,14 @@ export async function createReport(req, res) {
       reports: await getReports(),
       error: error.message
     });
+  }
+}
+
+export async function removeReport(req, res) {
+  try {
+    await deleteReport(req.params.id);
+    res.send("");
+  } catch (error) {
+    res.status(404).send(error.message);
   }
 }
