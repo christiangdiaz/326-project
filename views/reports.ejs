@@ -55,7 +55,7 @@
   <% } %>
 
   <% reports.forEach((report) => { %>
-    <article>
+    <article id="report-<%= report._id %>">
       <h3>Unit <%= report.unit %></h3>
 
       <p><%= report.description %></p>

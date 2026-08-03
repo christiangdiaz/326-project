@@ -4,8 +4,12 @@
   "description": "| Name           | GitHub Username |\r | -------------- | --------------- |\r | Christian Diaz | christiangdiaz  |\r | Yougi Jain     | yougijain       |",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {}
   },
   "repository": {
     "type": "git",
@@ -21,6 +25,10 @@
   "type": "module",
   "dependencies": {
     "ejs": "^6.0.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongoose": "^9.9.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
