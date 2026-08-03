@@ -9,59 +9,116 @@
   >
 
   <title>Maintenance Report Board</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 
-<body>
-  <h1>Maintenance Report Board</h1>
+<body class="bg-gray-100 text-gray-900">
+  <main class="mx-auto max-w-5xl p-4 sm:p-8">
+    <h1 class="mb-6 text-3xl font-bold">
+      Maintenance Report Board
+    </h1>
 
-  <% if (error) { %>
-    <p>
-      <strong>Error:</strong>
-      <%= error %>
-    </p>
-  <% } %>
+    <% if (error) { %>
+      <p class="mb-4 rounded bg-red-100 p-3 text-red-700">
+        <strong>Error:</strong>
+        <%= error %>
+      </p>
+    <% } %>
 
-  <form action="/reports" method="POST">
-    <div>
-      <label for="unit">Unit number (ex: 2c):</label>
+    <section class="mb-10 rounded-lg bg-white p-5 shadow">
+      <h2 class="mb-4 text-xl font-semibold">
+        Submit a Report
+      </h2>
 
-      <input
-        id="unit"
-        name="unit"
-        type="text"
+      <form
+        action="/reports"
+        method="POST"
+        class="space-y-4"
       >
-    </div>
+        <div>
+          <label
+            for="unit"
+            class="mb-1 block font-medium"
+          >
+            Unit number
+          </label>
 
-    <div>
-      <label for="description">
-        Problem description:
-      </label>
+          <input
+            id="unit"
+            name="unit"
+            type="text"
+            placeholder="2C"
+            class="w-full rounded border border-gray-300 p-2"
+          >
+        </div>
 
-      <textarea
-        id="description"
-        name="description"
-      ></textarea>
-    </div>
+        <div>
+          <label
+            for="description"
+            class="mb-1 block font-medium"
+          >
+            Problem description
+          </label>
 
-    <button type="submit">
-      Submit report
-    </button>
-  </form>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            class="w-full rounded border border-gray-300 p-2"
+          ></textarea>
+        </div>
 
-  <h2>Submitted Reports</h2>
+        <button
+          type="submit"
+          class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+        >
+          Submit report
+        </button>
+      </form>
+    </section>
 
-  <% if (reports.length === 0) { %>
-    <p>No reports submitted yet.</p>
-  <% } %>
+    <h2 class="mb-4 text-2xl font-semibold">
+      Submitted Reports
+    </h2>
 
-  <% reports.forEach((report) => { %>
-    <article id="report-<%= report._id %>">
-      <h3>Unit <%= report.unit %></h3>
+    <% if (reports.length === 0) { %>
+      <p>No reports submitted yet.</p>
+    <% } %>
 
-      <p><%= report.description %></p>
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <% reports.forEach((report) => { %>
+        <article
+          id="report-<%= report._id %>"
+          class="rounded-lg bg-white p-5 shadow"
+        >
+          <div class="mb-3 flex items-start justify-between gap-4">
+            <h3 class="text-lg font-bold">
+              Unit <%= report.unit %>
+            </h3>
 
-      <p>Status: <%= report.status %></p>
-    </article>
-  <% }) %>
+            <span class="rounded bg-gray-200 px-2 py-1 text-sm">
+              <%= report.status %>
+            </span>
+          </div>
+
+          <p class="mb-5 text-gray-700">
+            <%= report.description %>
+          </p>
+
+          <button
+            hx-delete="/reports/<%= report._id %>"
+            hx-target="#report-<%= report._id %>"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this report?"
+            class="rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </article>
+      <% }) %>
+    </section>
+  </main>
 </body>
 </html>
