@@ -13,7 +13,10 @@ export async function showReports(req, res) {
 
 export async function createReport(req, res) {
   try {
-    await addReport(req.body);
+    await addReport({
+      ...req.body,
+      ownerId: req.user.id
+    });
 
     res.redirect("/reports");
   } catch (error) {
@@ -26,9 +29,15 @@ export async function createReport(req, res) {
 
 export async function removeReport(req, res) {
   try {
-    await deleteReport(req.params.id);
+    await deleteReport(
+      req.params.id,
+      req.user
+    );
+
     res.send("");
   } catch (error) {
-    res.status(404).send(error.message);
+    res
+      .status(error.status || 404)
+      .send(error.message);
   }
 }

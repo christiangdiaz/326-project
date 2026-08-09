@@ -14,6 +14,9 @@ const reportSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500
     },
+    ownerId: {
+    type: String
+    },
     status: {
       type: String,
       // Kept in sync with ALLOWED_STATUSES in services/reportService.js.

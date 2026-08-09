@@ -24,6 +24,8 @@
   "homepage": "https://github.com/christiangdiaz/326-project#readme",
   "type": "module",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "mongoose": "^9.9.1"
