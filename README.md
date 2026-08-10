@@ -27,6 +27,15 @@ Our team is building an apartment maintenance report board where residents submi
    The app defaults to `mongodb://127.0.0.1:27017/maintenance_reports`. **No `.env` file and no secrets are required** — if you have MongoDB running on the default port, it just works.
 
 4. Start the server with `npm start`
+
+   Creating an **admin** account: Start with `ADMIN_EMAIL` set instead. 
+   
+   For the `admin` role:
+
+   ```
+   ADMIN_EMAIL=admin@example.com npm start
+   ```
+
 5. Finally, visit `http://localhost:3000` (or `http://localhost:3000/reports`) to see the Maintenance Report Board.
 
 To run the test suite: `npm test`
@@ -108,28 +117,88 @@ What did _not_ change is the layering boundary: no layer above the repository kn
 
 **2. The client-facing id.** Sprint 2's template emitted no record identifier at all: the `forEach` took no index and `report.id` was never rendered, so there was no array-position assumption to unwind. The exception shows up where per-record actions need a stable handle — each `<article>` in `views/reports.ejs` now carries `id="report-<%= report._id %>"`, MongoDB's real `_id`. The service's old `id: Date.now()` generation is gone; MongoDB assigns `_id` instead.
 
+
+# Sprint 4 Changes
+
+## 1. Authentication
+
+Session cookie was selected over token because this application uses server rendering of the EJS pages through the ordinary form posts, and there is nothing that should be encoded in a bearer token, and server storage allows logging out, while JWTs are valid until their expiration regardless of the server actions.
+
+Passwords are encrypted using bcrypt (cost 10) in the services/authService.js file, and passwordHash is saved. Session cookies are stored in the Map object in sessions.js file, therefore starting the server anew logs out all users. Role in models/userModel.js is an enum of member and admin, and is never set through the signup form — you will have admin role only if your email is equal to ADMIN_EMAIL environment variable.
+
+Sign up and log in steps:
+
+- Run ADMIN_EMAIL=admin@example.com npm start.
+- Go to http://localhost:3000/login.
+- Sign up two times: once with admin@example.com login (admin role) and once with member1@example.com login (member).
+- From the same page log in to the application.
+- Header shows the currently used account and role and also has Log out button.
+
+## 2. Authorization
+
+middleware/requireLogin.js ensures that nobody is logged in, and if not, it gives 401 error status. And then, deleteReport in services/reportService.js checks whether this specific user is authorized to edit this particular record, providing 403 error code if not allowed. Service authorization is performed after retrieving the record using findById method because the ownership check is possible only when the record is retrieved.
+
+What needs testing is deleting the report. You need to create a report as member1, then try curl -i -X DELETE http://localhost:3000/reports/<id> for: nobody, who is not logged in (401 status error), member2 (403 status error, the report is not deleted, but the service authorizes user, 403 status error), member1 (200 status error, deleted), admin (200 status error, role overrides ownership). It will work even in the browser, using different accounts.
+
+## 3. Accessibility fixes
+
+Delete is within the article that hx-swap="outerHTML" deletes, so delete report causes deletion of the focused element and focus returns to the body. Now public/app.js focuses the Delete button of the next report or of the "Submitted Reports" header if there are no reports left. HTMX swaps on 2xx only, so a delete blocked by a 403 did nothing. Now role="status" announces both results.
+
+No way to navigate to the login page: neither view contained /login, and there was no sign-out control anywhere. views/partials/header.ejs adds a skip link, a sign-in status indicator, a Sign out button, and a login link. The main element has tabindex="-1", so that the skip link would move the focus instead of scrolling to the top. On /reports there are nine controls in the right tab order. Six text fields have a meaningful label with for, and each Delete button has aria-label="Delete report for unit 2C". views/auth.ejs was refactored as well, having no lang, no viewport meta, and two h1 elements. A failed login previously redirected to an ordinary text page, without any way to return to the application; errors now render inline in a role="alert".
+
+Contrast was calculated for rendered pixels with getComputedStyle, taking into account hover, against the WCAG algorithm. Two surfaces are non-compliant: the input placeholder at 2.54 (now 7.56) and the input border at 1.47 against the 3.0 minimum for non-text contrast (now 4.83). It is the hidden one — we never explicitly defined its color, and it inherited gray-400 from Tailwind preflight, which is not present in our markup and could not be detected through class reading. Buttons already were compliant, at 4.83 to 6.70 including hover, but were darkened slightly for hover margin and now have 6.47 to 8.72 contrast.
+
+Verification steps: Tab from the top of /reports — the skip link should be the first thing to receive focus, and focus should never jump to the top of the page after a delete. Sign in as two accounts, and delete each other's reports using the keyboard. Put a color picker on the Submit and Delete buttons, with hover.
+
+## 4. Health check
+
+routes/health.js serves GET /health 
+mounted in server.js above cookieParser and attachUser so no auth middleware runs in front of it
+
+
+    curl http://localhost:3000/health
+
+    { "status": "ok", "database": "connected", "uptime": 834 }
+
+Returns 200 while MongoDB is connected and 503 with "status": "degraded" if the database drops. 
+No cookie required.
+
 # System Diagram
 
 ```mermaid
-flowchart LR
-    Browser --> Routes
-    Routes --> Controller
-    Controller --> Service
-    Service --> Repository
-    Repository --> MongoDB
+flowchart TD
+    Browser["Browser<br/>EJS + HTMX + Tailwind"]
 
-    Browser --> AuthRoutes[Auth Routes]
-    AuthRoutes --> AuthController[Auth Controller]
-    AuthController --> AuthService[Auth Service]
-    AuthService --> UserRepository[User Repository]
-    UserRepository --> MongoDB
+    Browser -->|"GET /health"| Health["routes/health.js<br/>mounted before all auth"]
 
-    AuthController --> Sessions
-    Sessions --> AttachUser[attachUser]
-    AttachUser --> Routes
+    Browser --> AttachUser["middleware/attachUser.js<br/>signed cookie -> req.user"]
 
-    Routes --> RequireLogin[requireLogin]
-    RequireLogin --> Controller
+    AttachUser --> AuthRoutes["routes/auth.js<br/>POST /signup /login /logout"]
+    AttachUser --> ReportRoutes["routes/reports.js"]
 
-    Service --> Authorization[Owner/Admin Check]
+    ReportRoutes -->|"requireLogin<br/>401 if nobody logged in"| ReportController["controllers/reportController.js"]
+    AuthRoutes --> AuthController["controllers/authController.js"]
+
+    subgraph Services["Service layer - business rules AND authorization"]
+        ReportService["reportService.js<br/>validation rules<br/>owner-or-admin check -> 403"]
+        AuthService["authService.js<br/>bcrypt hash / compare"]
+    end
+
+    ReportController --> ReportService
+    AuthController --> AuthService
+
+    AuthController --> Sessions["sessions.js<br/>in-memory session store"]
+    Sessions -.->|"session id in signed cookie"| AttachUser
+
+    subgraph Repositories["Repository layer - only layer that touches the DB"]
+        ReportRepo["reportRepository.js"]
+        UserRepo["usersRepository.js<br/>models/userModel.js<br/>email, passwordHash, role"]
+    end
+
+    ReportService --> ReportRepo
+    AuthService --> UserRepo
+
+    ReportRepo --> Mongo[("MongoDB")]
+    UserRepo --> Mongo
+    Health -.->|"connection readyState"| Mongo
 ```

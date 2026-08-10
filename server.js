@@ -3,6 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import reportRoutes from "./routes/reports.js";
 import authRoutes from "./routes/auth.js";
+import healthRoutes from "./routes/health.js";
 import { attachUser } from "./middleware/attachUser.js";
 import { connectDB } from "./config/db.js";
 
@@ -27,6 +28,10 @@ app.use(express.json());
 app.use(
   express.urlencoded({ extended: false })
 );
+
+// Mounted ahead of the session middleware so nothing to do with authentication
+// can sit between a monitor and the answer to "is this process up?".
+app.use(healthRoutes);
 
 app.use(cookieParser(SESSION_SECRET));
 app.use(attachUser);

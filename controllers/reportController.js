@@ -7,6 +7,7 @@ import {
 export async function showReports(req, res) {
   res.render("reports", {
     reports: await getReports(),
+    user: req.user,
     error: null
   });
 }
@@ -22,6 +23,7 @@ export async function createReport(req, res) {
   } catch (error) {
     res.status(400).render("reports", {
       reports: await getReports(),
+      user: req.user,
       error: error.message
     });
   }

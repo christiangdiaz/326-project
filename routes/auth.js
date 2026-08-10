@@ -9,7 +9,12 @@ import {
 const router = express.Router();
 
 router.get("/login", (req, res) => {
-  res.render("auth");
+  res.render("auth", {
+    error: null,
+    errorForm: null,
+    email: "",
+    signedUp: req.query.signedUp === "1"
+  });
 });
 
 router.post("/signup", signup);
