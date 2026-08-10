@@ -1,39 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login</title>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Log in or sign up - Maintenance Report Board</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Sign Up</h1>
 
-  <form method="POST" action="/signup">
-    <label>
-      Email
-      <input type="email" name="email" required>
-    </label>
+<body class="bg-gray-100 text-gray-900">
+  <%- include("partials/header") %>
 
-    <label>
-      Password
-      <input type="password" name="password" required>
-    </label>
+  <!-- tabindex="-1" so the skip link actually moves focus here rather than
+       only scrolling; without it some browsers leave focus at the top. -->
+  <main id="main" tabindex="-1" class="mx-auto max-w-md p-4 sm:p-8">
+    <h1 class="mb-6 text-3xl font-bold">
+      Log in or sign up
+    </h1>
 
-    <button type="submit">Sign Up</button>
-  </form>
+    <% if (signedUp) { %>
+      <p
+        role="status"
+        class="mb-6 rounded bg-green-100 p-3 text-green-900"
+      >
+        Account created. You can log in now.
+      </p>
+    <% } %>
 
-  <h1>Login</h1>
+    <section class="mb-8 rounded-lg bg-white p-5 shadow">
+      <h2 class="mb-4 text-xl font-semibold">
+        Sign up
+      </h2>
 
-  <form method="POST" action="/login">
-    <label>
-      Email
-      <input type="email" name="email" required>
-    </label>
+      <% if (errorForm === "signup") { %>
+        <p
+          id="signup-error"
+          role="alert"
+          class="mb-4 rounded bg-red-100 p-3 text-red-800"
+        >
+          <strong>Error:</strong>
+          <%= error %>
+        </p>
+      <% } %>
 
-    <label>
-      Password
-      <input type="password" name="password" required>
-    </label>
+      <form method="POST" action="/signup" class="space-y-4">
+        <div>
+          <label
+            for="signup-email"
+            class="mb-1 block font-medium"
+          >
+            Email
+          </label>
 
-    <button type="submit">Login</button>
-  </form>
+          <input
+            id="signup-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            value="<%= errorForm === "signup" ? email : "" %>"
+            <%- errorForm === "signup" ? 'aria-describedby="signup-error"' : "" %>
+            class="w-full rounded border border-gray-500 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+          >
+        </div>
+
+        <div>
+          <label
+            for="signup-password"
+            class="mb-1 block font-medium"
+          >
+            Password
+          </label>
+
+          <input
+            id="signup-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            class="w-full rounded border border-gray-500 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="rounded bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-900"
+        >
+          Sign up
+        </button>
+      </form>
+    </section>
+
+    <section class="rounded-lg bg-white p-5 shadow">
+      <h2 class="mb-4 text-xl font-semibold">
+        Log in
+      </h2>
+
+      <% if (errorForm === "login") { %>
+        <p
+          id="login-error"
+          role="alert"
+          class="mb-4 rounded bg-red-100 p-3 text-red-800"
+        >
+          <strong>Error:</strong>
+          <%= error %>
+        </p>
+      <% } %>
+
+      <form method="POST" action="/login" class="space-y-4">
+        <div>
+          <label
+            for="login-email"
+            class="mb-1 block font-medium"
+          >
+            Email
+          </label>
+
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            value="<%= errorForm === "login" ? email : "" %>"
+            <%- errorForm === "login" ? 'aria-describedby="login-error"' : "" %>
+            class="w-full rounded border border-gray-500 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+          >
+        </div>
+
+        <div>
+          <label
+            for="login-password"
+            class="mb-1 block font-medium"
+          >
+            Password
+          </label>
+
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="w-full rounded border border-gray-500 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="rounded bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-900"
+        >
+          Log in
+        </button>
+      </form>
+    </section>
+  </main>
 </body>
 </html>

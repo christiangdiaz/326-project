@@ -8,12 +8,24 @@ import {
   destroySession
 } from "../sessions.js";
 
+// Failures re-render the auth page with the message inline instead of sending
+// a bare string. res.send(error.message) produced a plain-text page with no
+// heading, no form and no way back, which strands a keyboard user completely.
+function renderAuthError(res, status, form, req, message) {
+  res.status(status).render("auth", {
+    error: message,
+    errorForm: form,
+    email: typeof req.body?.email === "string" ? req.body.email : "",
+    signedUp: false
+  });
+}
+
 export async function signup(req, res) {
   try {
     await signupUser(req.body);
-    res.redirect("/login");
+    res.redirect("/login?signedUp=1");
   } catch (error) {
-    res.status(400).send(error.message);
+    renderAuthError(res, 400, "signup", req, error.message);
   }
 }
 
@@ -29,7 +41,7 @@ export async function login(req, res) {
 
     res.redirect("/reports");
   } catch (error) {
-    res.status(401).send(error.message);
+    renderAuthError(res, 401, "login", req, error.message);
   }
 }
 
