@@ -110,6 +110,26 @@ What did _not_ change is the layering boundary: no layer above the repository kn
 
 # System Diagram
 
-HTMX is used in the browser for the report deletion interaction, while Tailwind utility classes style the rendered EJS page. These do not add additional application layers, so the existing system diagram remains unchanged.
+```mermaid
+flowchart LR
+    Browser --> Routes
+    Routes --> Controller
+    Controller --> Service
+    Service --> Repository
+    Repository --> MongoDB
 
-![System diagram: the browser sends GET/POST /reports to routes, which call the controller, which calls the service (validation and business rules), which calls the repository. The repository is the only layer that talks to MongoDB, using Mongoose per-record operations getAll, findById, create, updateById and removeById. Alongside the service sits the Jest suite, which exercises the real service while replacing the repository with mocks via jest.unstable_mockModule, so no live database is involved. The controller renders HTML back to the browser.](assets/system-diagram.png)
+    Browser --> AuthRoutes[Auth Routes]
+    AuthRoutes --> AuthController[Auth Controller]
+    AuthController --> AuthService[Auth Service]
+    AuthService --> UserRepository[User Repository]
+    UserRepository --> MongoDB
+
+    AuthController --> Sessions
+    Sessions --> AttachUser[attachUser]
+    AttachUser --> Routes
+
+    Routes --> RequireLogin[requireLogin]
+    RequireLogin --> Controller
+
+    Service --> Authorization[Owner/Admin Check]
+```

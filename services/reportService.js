@@ -2,7 +2,8 @@ import {
   getAll,
   create,
   updateById,
-  removeById
+  removeById,
+  findById
 } from "../repositories/reportRepository.js";
 
 // Defined here rather than imported from the repository: the Jest suite
@@ -17,7 +18,7 @@ export async function getReports() {
   return getAll();
 }
 
-export async function addReport({ unit, description } = {}) {
+export async function addReport({ unit, description, ownerId } = {}) {
   const cleanUnit = typeof unit === "string" ? unit.trim() : "";
   const cleanDescription =
     typeof description === "string" ? description.trim() : "";
@@ -38,11 +39,17 @@ export async function addReport({ unit, description } = {}) {
     );
   }
 
-  return create({
+    const report = {
     unit: cleanUnit.toUpperCase(),
     description: cleanDescription,
-    status: "Open" // residents never choose a status
-  });
+    status: "Open"
+    };
+
+    if (ownerId) {
+    report.ownerId = ownerId;
+    }
+
+    return create(report);
 }
 
 export async function updateReportStatus(id, status) {
@@ -65,16 +72,35 @@ export async function updateReportStatus(id, status) {
   return updated;
 }
 
-export async function deleteReport(id) {
+export async function deleteReport(
+  id,
+  user
+) {
   if (!id) {
-    throw new Error("Report id is required.");
+    throw new Error(
+      "Report id is required."
+    );
   }
 
-  const removed = await removeById(id);
+  const report = await findById(id);
 
-  if (!removed) {
-    throw new Error("Report not found.");
+  if (!report) {
+    throw new Error(
+      "Report not found."
+    );
   }
 
-  return removed;
+  if (
+    user.role !== "admin" &&
+    report.ownerId !== user.id
+  ) {
+    const error =
+      new Error("Forbidden.");
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  return removeById(id);
 }
