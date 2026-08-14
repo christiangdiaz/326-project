@@ -18,7 +18,9 @@ Our team is building an apartment maintenance report board where residents submi
 # Section 4: How to Get Started
 
 1. Clone the repository `git clone https://github.com/christiangdiaz/326-project.git`
+
 2. Install dependencies `npm install`
+
 3. Start MongoDB. Any one of these works:
    - Docker: `docker run -d --name mongo -p 27017:27017 mongo:7`
    - A local `mongod` on the default port
@@ -26,17 +28,23 @@ Our team is building an apartment maintenance report board where residents submi
 
    The app defaults to `mongodb://127.0.0.1:27017/maintenance_reports`. **No `.env` file and no secrets are required** — if you have MongoDB running on the default port, it just works.
 
-4. Start the server with `npm start`
+4. Seed the database with sample reports:
 
-   Creating an **admin** account: Start with `ADMIN_EMAIL` set instead. 
-   
+   ```
+   npm run seed
+   ```
+
+5. Start the server with `npm start`
+
+   Creating an **admin** account: Start with `ADMIN_EMAIL` set instead.
+
    For the `admin` role:
 
    ```
    ADMIN_EMAIL=admin@example.com npm start
    ```
 
-5. Finally, visit `http://localhost:3000` (or `http://localhost:3000/reports`) to see the Maintenance Report Board.
+6. Finally, visit `http://localhost:3000` (or `http://localhost:3000/reports`) to see the Maintenance Report Board.
 
 To run the test suite: `npm test`
 
@@ -117,7 +125,6 @@ What did _not_ change is the layering boundary: no layer above the repository kn
 
 **2. The client-facing id.** Sprint 2's template emitted no record identifier at all: the `forEach` took no index and `report.id` was never rendered, so there was no array-position assumption to unwind. The exception shows up where per-record actions need a stable handle — each `<article>` in `views/reports.ejs` now carries `id="report-<%= report._id %>"`, MongoDB's real `_id`. The service's old `id: Date.now()` generation is gone; MongoDB assigns `_id` instead.
 
-
 # Sprint 4 Changes
 
 ## 1. Authentication
@@ -128,9 +135,9 @@ Passwords are encrypted using bcrypt (cost 10) in the services/authService.js fi
 
 Sign up and log in steps:
 
-- Run ADMIN_EMAIL=admin@example.com npm start.
+- Run ADMIN_EMAIL=[admin@example.com](mailto:admin@example.com) npm start.
 - Go to http://localhost:3000/login.
-- Sign up two times: once with admin@example.com login (admin role) and once with member1@example.com login (member).
+- Sign up two times: once with [admin@example.com](mailto:admin@example.com) login (admin role) and once with [member1@example.com](mailto:member1@example.com) login (member).
 - From the same page log in to the application.
 - Header shows the currently used account and role and also has Log out button.
 
@@ -152,15 +159,16 @@ Verification steps: Tab from the top of /reports — the skip link should be the
 
 ## 4. Health check
 
-routes/health.js serves GET /health 
+routes/health.js serves GET /health
 mounted in server.js above cookieParser and attachUser so no auth middleware runs in front of it
 
+```
+curl http://localhost:3000/health
 
-    curl http://localhost:3000/health
+{ "status": "ok", "database": "connected", "uptime": 834 }
+```
 
-    { "status": "ok", "database": "connected", "uptime": 834 }
-
-Returns 200 while MongoDB is connected and 503 with "status": "degraded" if the database drops. 
+Returns 200 while MongoDB is connected and 503 with "status": "degraded" if the database drops.
 No cookie required.
 
 # System Diagram
