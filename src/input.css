@@ -1,0 +1,7 @@
+/* Source stylesheet for the Tailwind build. `npm run build:css` compiles this
+   into public/style.css, which the views load. Preflight comes in with
+   @tailwind base and is what supplies the form-control defaults the
+   accessibility audit measured against. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
