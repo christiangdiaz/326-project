@@ -186,28 +186,80 @@ describe("updateReportStatus", () => {
 });
 
 describe("deleteReport", () => {
+  const owner = {
+    id: "user-1",
+    role: "member"
+  };
+
+  const otherUser = {
+    id: "user-2",
+    role: "member"
+  };
+
+  const admin = {
+    id: "admin-1",
+    role: "admin"
+  };
+
+  const ownedReport = {
+    ...openReport,
+    ownerId: "user-1"
+  };
+
   test("rejects a missing id", async () => {
-    await expect(deleteReport("")).rejects.toThrow(
-      "Report id is required."
-    );
+    await expect(
+      deleteReport("", owner)
+    ).rejects.toThrow("Report id is required.");
 
     expect(repo.removeById).not.toHaveBeenCalled();
   });
 
   test("throws when the report does not exist", async () => {
-    repo.removeById.mockResolvedValue(null);
+    repo.findById.mockResolvedValue(null);
 
     await expect(
-      deleteReport("68a1f3c2d4e5f60718293a4c")
+      deleteReport(
+        "68a1f3c2d4e5f60718293a4c",
+        owner
+      )
     ).rejects.toThrow("Report not found.");
+
+    expect(repo.removeById).not.toHaveBeenCalled();
   });
 
-  test("removes an existing report through the repository", async () => {
-    repo.removeById.mockResolvedValue(openReport);
+  test("owner can delete their report", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+    repo.removeById.mockResolvedValue(ownedReport);
 
-    await expect(deleteReport(openReport._id)).resolves.toEqual(
-      openReport
+    await expect(
+      deleteReport(openReport._id, owner)
+    ).resolves.toEqual(ownedReport);
+
+    expect(repo.removeById).toHaveBeenCalledWith(
+      openReport._id
     );
-    expect(repo.removeById).toHaveBeenCalledWith(openReport._id);
+  });
+
+  test("another member cannot delete the report", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+
+    await expect(
+      deleteReport(openReport._id, otherUser)
+    ).rejects.toThrow("Forbidden.");
+
+    expect(repo.removeById).not.toHaveBeenCalled();
+  });
+
+  test("admin can delete any report", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+    repo.removeById.mockResolvedValue(ownedReport);
+
+    await expect(
+      deleteReport(openReport._id, admin)
+    ).resolves.toEqual(ownedReport);
+
+    expect(repo.removeById).toHaveBeenCalledWith(
+      openReport._id
+    );
   });
 });
