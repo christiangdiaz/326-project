@@ -48,6 +48,17 @@ Our team is building an apartment maintenance report board where residents submi
 
 To run the test suite: `npm test`
 
+## Environment variables
+
+No `.env` file needed. Application reads four optional environment variables. Defaults:
+
+| Variable | Default if unset |
+| --- | --- |
+| `MONGODB_URI` | `mongodb://127.0.0.1:27017/maintenance_reports` |
+| `ADMIN_EMAIL` | unset — nobody can receive the `admin` role |
+| `PORT` | `3000` |
+| `SESSION_SECRET` | `dev-secret` — a known value, so override it outside development |
+
 # Section 5: Feature 1 - Report Submission
 
 Primary action is a resident submitting a maintenance report.
@@ -84,7 +95,7 @@ docker exec -it mongo mongosh maintenance_reports --eval "db.reports.find()"
 
 ## 2. Jest tests for every service-layer business rule
 
-`__tests__/reportService.test.js` covers all 18 cases with the repository replaced by `jest.unstable_mockModule`. **No database connection is opened** — the suite runs in roughly a quarter of a second.
+`__tests__/reportService.test.js` covers all 20 cases with the repository replaced by `jest.unstable_mockModule`. **No database connection is opened** — the suite runs in roughly a quarter of a second.
 
 Rules under test:
 
@@ -92,7 +103,7 @@ Rules under test:
 - `addReport` — unit at most 10 characters, description at most 500
 - `addReport` — trims both fields, uppercases the unit, and forces `status: "Open"` even if the client supplies one
 - `updateReportStatus` — id required, status must be one of the three allowed values, report must exist
-- `deleteReport` — id required, report must exist
+- `deleteReport` — id required, report must exist, owner can delete their own, admin can delete anyone's, any other member is refused with a `403`
 - Plus the happy path of each, asserting the repository is called with the right arguments and is **not** called at all when validation fails
 
 **How to see it:** run `npm test`. To prove the suite is genuinely mocked rather than quietly talking to a real database, **stop MongoDB first** (`docker stop mongo`) and run it again — it stays green.
@@ -135,9 +146,9 @@ Passwords are encrypted using bcrypt (cost 10) in the services/authService.js fi
 
 Sign up and log in steps:
 
-- Run ADMIN_EMAIL=[admin@example.com](mailto:admin@example.com) npm start.
-- Go to http://localhost:3000/login.
-- Sign up two times: once with [admin@example.com](mailto:admin@example.com) login (admin role) and once with [member1@example.com](mailto:member1@example.com) login (member).
+- Run `ADMIN_EMAIL=admin@example.com npm start`.
+- Go to `http://localhost:3000/login`.
+- Sign up two times: once with `admin@example.com` (admin role) and once with `member1@example.com` (member).
 - From the same page log in to the application.
 - Header shows the currently used account and role and also has Log out button.
 
