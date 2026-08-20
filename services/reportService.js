@@ -6,101 +6,146 @@ import {
   findById
 } from "../repositories/reportRepository.js";
 
-// Defined here rather than imported from the repository: the Jest suite
-// replaces that whole module with mocks, so a shared constant would be
-// undefined inside every test.
-export const ALLOWED_STATUSES = ["Open", "In Progress", "Resolved"];
+import {
+  DEFAULT_REPORT_STATUS,
+  REPORT_STATUSES,
+  isReportStatus
+} from "../constants/reportStatus.js";
+
+import { reportEvents } from "../lib/reportEvents.js";
+import { badRequest, forbidden, notFound } from "../lib/httpError.js";
+
+// Re-exported for the callers that used to import it from here. The list
+// itself now lives in constants/reportStatus.js, which both this module and
+// the Mongoose schema read, so the two copies that had to be hand-synced are
+// gone.
+export const ALLOWED_STATUSES = REPORT_STATUSES;
 
 const UNIT_MAX = 10;
 const DESCRIPTION_MAX = 500;
 
-export async function getReports() {
-  return getAll();
+const text = (value) => (typeof value === "string" ? value.trim() : "");
+
+// Filtering happens here rather than in the query so the rules are unit
+// testable without a database, and so the repository keeps a single read path.
+export async function getReports({ status, search } = {}) {
+  const reports = await getAll();
+
+  const wanted = isReportStatus(status) ? status : null;
+  const needle = text(search).toLowerCase();
+
+  if (!wanted && !needle) return reports;
+
+  return reports.filter((report) => {
+    if (wanted && report.status !== wanted) return false;
+
+    if (!needle) return true;
+
+    return (
+      report.unit?.toLowerCase().includes(needle) ||
+      report.description?.toLowerCase().includes(needle)
+    );
+  });
 }
 
 export async function addReport({ unit, description, ownerId } = {}) {
-  const cleanUnit = typeof unit === "string" ? unit.trim() : "";
-  const cleanDescription =
-    typeof description === "string" ? description.trim() : "";
+  const cleanUnit = text(unit);
+  const cleanDescription = text(description);
 
   if (!cleanUnit || !cleanDescription) {
-    throw new Error("Unit number and description are required.");
+    throw badRequest("Unit number and description are required.");
   }
 
   if (cleanUnit.length > UNIT_MAX) {
-    throw new Error(
+    throw badRequest(
       `Unit number must be ${UNIT_MAX} characters or fewer.`
     );
   }
 
   if (cleanDescription.length > DESCRIPTION_MAX) {
-    throw new Error(
+    throw badRequest(
       `Description must be ${DESCRIPTION_MAX} characters or fewer.`
     );
   }
 
-    const report = {
+  // Built field by field from validated input rather than spread from the
+  // request body: a client that posts `status` or `ownerId` of its own cannot
+  // reach the database through this path.
+  const report = {
     unit: cleanUnit.toUpperCase(),
     description: cleanDescription,
-    status: "Open"
-    };
+    status: DEFAULT_REPORT_STATUS
+  };
 
-    if (ownerId) {
+  if (ownerId) {
     report.ownerId = ownerId;
-    }
-
-    return create(report);
-}
-
-export async function updateReportStatus(id, status) {
-  if (!id) {
-    throw new Error("Report id is required.");
   }
 
-  if (!ALLOWED_STATUSES.includes(status)) {
-    throw new Error(
-      `Status must be one of: ${ALLOWED_STATUSES.join(", ")}.`
+  const created = await create(report);
+
+  reportEvents.emitChange("created", created);
+
+  return created;
+}
+
+// Deleting and re-statusing a report answer the same question — may this user
+// change this report? — so they ask it in one place.
+function assertCanModify(report, user) {
+  if (user?.role === "admin") return;
+
+  if (!user || report.ownerId !== user.id) {
+    throw forbidden("You can only change your own reports.");
+  }
+}
+
+export async function updateReportStatus(id, status, user) {
+  if (!id) {
+    throw badRequest("Report id is required.");
+  }
+
+  if (!isReportStatus(status)) {
+    throw badRequest(
+      `Status must be one of: ${REPORT_STATUSES.join(", ")}.`
     );
+  }
+
+  // Read before write so the ownership check runs against the stored report
+  // rather than against whatever the caller claims it contains.
+  if (user) {
+    const existing = await findById(id);
+
+    if (!existing) throw notFound("Report not found.");
+
+    assertCanModify(existing, user);
   }
 
   const updated = await updateById(id, { status });
 
   if (!updated) {
-    throw new Error("Report not found.");
+    throw notFound("Report not found.");
   }
+
+  reportEvents.emitChange("updated", updated);
 
   return updated;
 }
 
-export async function deleteReport(
-  id,
-  user
-) {
+export async function deleteReport(id, user) {
   if (!id) {
-    throw new Error(
-      "Report id is required."
-    );
+    throw badRequest("Report id is required.");
   }
 
   const report = await findById(id);
 
   if (!report) {
-    throw new Error(
-      "Report not found."
-    );
+    throw notFound("Report not found.");
   }
 
-  if (
-    user.role !== "admin" &&
-    report.ownerId !== user.id
-  ) {
-    const error =
-      new Error("Forbidden.");
+  assertCanModify(report, user);
 
-    error.status = 403;
+  const removed = await removeById(id);
 
-    throw error;
-  }
+  reportEvents.emitChange("deleted", report);
 
-  return removeById(id);
+  return removed;
 }

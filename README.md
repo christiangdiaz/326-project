@@ -1,3 +1,9 @@
+# Maintenance Report Board
+
+## Walkthrough Video
+
+https://github.com/user-attachments/assets/2fa05153-504c-47b8-9c51-f1405b02f522
+
 # Section 1
 
 | Name           | GitHub Username |
@@ -50,14 +56,16 @@ To run the test suite: `npm test`
 
 ## Environment variables
 
-No `.env` file needed. Application reads four optional environment variables. Defaults:
+Application reads these from the environment. See `.env.example` for the full template.
 
 | Variable | Default if unset |
 | --- | --- |
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/maintenance_reports` |
 | `ADMIN_EMAIL` | unset — nobody can receive the `admin` role |
 | `PORT` | `3000` |
-| `SESSION_SECRET` | `dev-secret` — a known value, so override it outside development |
+| `TRUST_PROXY` | `0` — no reverse proxy in front of the app |
+| `LOG_LEVEL` | `info` |
+| `SESSION_SECRET` | **Required in production; the app refuses to start without it.** In development a random one is generated per process, so sessions do not survive a restart. Generate a real one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"` |
 
 # Section 5: Feature 1 - Report Submission
 

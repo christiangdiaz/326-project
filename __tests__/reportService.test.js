@@ -245,7 +245,7 @@ describe("deleteReport", () => {
 
     await expect(
       deleteReport(openReport._id, otherUser)
-    ).rejects.toThrow("Forbidden.");
+    ).rejects.toThrow("You can only change your own reports.");
 
     expect(repo.removeById).not.toHaveBeenCalled();
   });
@@ -261,5 +261,129 @@ describe("deleteReport", () => {
     expect(repo.removeById).toHaveBeenCalledWith(
       openReport._id
     );
+  });
+});
+describe("getReports — filtering", () => {
+  const reports = [
+    { ...openReport, unit: "2C", description: "Leaky sink", status: "Open" },
+    {
+      _id: "b",
+      unit: "4A",
+      description: "Broken air conditioner",
+      status: "Resolved"
+    },
+    {
+      _id: "c",
+      unit: "1B",
+      description: "Hallway light out",
+      status: "Open"
+    }
+  ];
+
+  beforeEach(() => {
+    repo.getAll.mockResolvedValue(reports);
+  });
+
+  test("returns everything when no filter is given", async () => {
+    await expect(getReports()).resolves.toHaveLength(3);
+  });
+
+  test("filters by status", async () => {
+    const result = await getReports({ status: "Open" });
+
+    expect(result.map((report) => report.unit)).toEqual(["2C", "1B"]);
+  });
+
+  test("ignores a status that is not in the allowed list", async () => {
+    await expect(getReports({ status: "Cancelled" })).resolves.toHaveLength(3);
+  });
+
+  test("searches description and unit, case-insensitively", async () => {
+    await expect(getReports({ search: "LIGHT" })).resolves.toEqual([
+      reports[2]
+    ]);
+
+    await expect(getReports({ search: "4a" })).resolves.toEqual([reports[1]]);
+  });
+
+  test("combines status and search", async () => {
+    await expect(
+      getReports({ status: "Open", search: "sink" })
+    ).resolves.toEqual([reports[0]]);
+  });
+});
+
+describe("updateReportStatus — authorization", () => {
+  const ownedReport = { ...openReport, ownerId: "user-1" };
+
+  test("owner may change the status", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+    repo.updateById.mockResolvedValue({
+      ...ownedReport,
+      status: "Resolved"
+    });
+
+    await expect(
+      updateReportStatus(openReport._id, "Resolved", {
+        id: "user-1",
+        role: "member"
+      })
+    ).resolves.toMatchObject({ status: "Resolved" });
+  });
+
+  test("another member may not, and nothing is written", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+
+    await expect(
+      updateReportStatus(openReport._id, "Resolved", {
+        id: "user-2",
+        role: "member"
+      })
+    ).rejects.toThrow("You can only change your own reports.");
+
+    expect(repo.updateById).not.toHaveBeenCalled();
+  });
+
+  test("admin may change any report", async () => {
+    repo.findById.mockResolvedValue(ownedReport);
+    repo.updateById.mockResolvedValue({
+      ...ownedReport,
+      status: "In Progress"
+    });
+
+    await expect(
+      updateReportStatus(openReport._id, "In Progress", {
+        id: "admin-1",
+        role: "admin"
+      })
+    ).resolves.toMatchObject({ status: "In Progress" });
+  });
+
+  test("a status change on a missing report is a 404, not a 403", async () => {
+    repo.findById.mockResolvedValue(null);
+
+    await expect(
+      updateReportStatus(openReport._id, "Resolved", {
+        id: "user-1",
+        role: "member"
+      })
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("error shapes", () => {
+  test("validation failures carry a 400", async () => {
+    await expect(addReport({ unit: "2C" })).rejects.toMatchObject({
+      status: 400,
+      expose: true
+    });
+  });
+
+  test("an ownership failure carries a 403", async () => {
+    repo.findById.mockResolvedValue({ ...openReport, ownerId: "user-1" });
+
+    await expect(
+      deleteReport(openReport._id, { id: "user-2", role: "member" })
+    ).rejects.toMatchObject({ status: 403, expose: true });
   });
 });

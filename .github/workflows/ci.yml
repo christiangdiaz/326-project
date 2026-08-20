@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# A second push to the same branch cancels the run still in flight rather than
+# queueing behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The version in package.json engines, and the next one, so a break on
+        # the newer runtime shows up here rather than on someone's laptop.
+        node: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      # The stylesheet and the vendored bundle are committed build output, so
+      # CI rebuilds them and fails if the committed copies are stale — which
+      # is the only way anyone finds out before a page renders unstyled.
+      - name: Check committed build output is current
+        run: |
+          npm run build
+          git diff --exit-code -- public/style.css public/vendor \
+            || {
+              echo "::error::public/style.css or public/vendor is out of date. Run 'npm run build' and commit the result."
+              exit 1
+            }
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Builds the production image on every change: a Dockerfile that only
+      # gets built at deploy time is a Dockerfile that breaks at deploy time.
+      - run: docker build -t maintenance-board:ci .

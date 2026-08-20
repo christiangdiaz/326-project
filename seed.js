@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
 import { create } from "./repositories/reportRepository.js";
+import { logger } from "./lib/logger.js";
 
 await connectDB();
 
@@ -24,6 +25,6 @@ await create({
   status: "Resolved"
 });
 
-console.log("Database seeded.");
+logger.info("database seeded", { reports: 3 });
 
 await mongoose.connection.close();

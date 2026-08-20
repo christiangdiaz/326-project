@@ -49,6 +49,8 @@
       <% } %>
 
       <form method="POST" action="/signup" class="space-y-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
         <div>
           <label
             for="signup-email"
@@ -82,9 +84,15 @@
             name="password"
             type="password"
             autocomplete="new-password"
+            minlength="10"
             required
+            aria-describedby="signup-password-hint"
             class="w-full rounded border border-gray-500 p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
           >
+
+          <p id="signup-password-hint" class="mt-1 text-sm text-gray-700">
+            At least 10 characters.
+          </p>
         </div>
 
         <button
@@ -113,6 +121,8 @@
       <% } %>
 
       <form method="POST" action="/login" class="space-y-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
         <div>
           <label
             for="login-email"

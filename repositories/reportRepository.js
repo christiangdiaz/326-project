@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+import {
+  DEFAULT_REPORT_STATUS,
+  REPORT_STATUSES
+} from "../constants/reportStatus.js";
+
 const reportSchema = new mongoose.Schema(
   {
     unit: {
@@ -15,16 +20,17 @@ const reportSchema = new mongoose.Schema(
       maxlength: 500
     },
     ownerId: {
-    type: String
+      type: String,
+      index: true
     },
     status: {
       type: String,
-      // Kept in sync with ALLOWED_STATUSES in services/reportService.js.
-      // Deliberately duplicated rather than shared: the service must not
-      // import constants from this module, or jest.unstable_mockModule
-      // would replace them with undefined in every test.
-      enum: ["Open", "In Progress", "Resolved"],
-      default: "Open",
+      // Single source of truth, shared with the service layer. Importing it
+      // from a constants module rather than from either side keeps the two
+      // in step without the service having to import from this file, which
+      // jest.unstable_mockModule replaces wholesale in the test suite.
+      enum: REPORT_STATUSES,
+      default: DEFAULT_REPORT_STATUS,
       index: true
     }
   },

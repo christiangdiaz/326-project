@@ -1,1 +1,7 @@
 node_modules/
+
+# Real environment values. .env.example is the template that is committed.
+.env
+.env.local
+
+coverage/
