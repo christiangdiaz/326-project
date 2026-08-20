@@ -1,3 +1,9 @@
+# Maintenance Report Board
+
+## Walkthrough Video
+
+https://github.com/user-attachments/assets/2fa05153-504c-47b8-9c51-f1405b02f522
+
 # Section 1
 
 | Name           | GitHub Username |
