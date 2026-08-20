@@ -1,48 +1,70 @@
-import path from "node:path";
-import express from "express";
-import cookieParser from "cookie-parser";
-import reportRoutes from "./routes/reports.js";
-import authRoutes from "./routes/auth.js";
-import healthRoutes from "./routes/health.js";
-import { attachUser } from "./middleware/attachUser.js";
+import mongoose from "mongoose";
+
+import { createApp } from "./app.js";
+import { config } from "./config/env.js";
 import { connectDB } from "./config/db.js";
+import { logger } from "./lib/logger.js";
+import { startSessionSweeper } from "./sessions.js";
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || "dev-secret";
+// Process lifecycle only: build the app, connect the database, open the
+// socket, and put all three back down again cleanly. Everything about *what*
+// the app does lives in app.js.
 
-app.set("view engine", "ejs");
-app.set(
-  "views",
-  path.join(import.meta.dirname, "views")
-);
+await connectDB(config.mongoUri);
 
-app.use(
-  express.static(
-    path.join(import.meta.dirname, "public")
-  )
-);
+const app = createApp({ config });
+const stopSweeper = startSessionSweeper();
 
-app.use(express.json());
-app.use(
-  express.urlencoded({ extended: false })
-);
+const server = app.listen(config.port, () => {
+  logger.info("server listening", {
+    url: `http://localhost:${config.port}`,
+    env: config.nodeEnv
+  });
+});
 
-// Mounted ahead of the session middleware so nothing to do with authentication
-// can sit between a monitor and the answer to "is this process up?".
-app.use(healthRoutes);
+// Without this, a container stop kills the process mid-request: in-flight
+// responses are cut off and the Mongo connection is dropped rather than
+// closed. server.close() stops accepting new connections and waits for the
+// ones in progress.
+let shuttingDown = false;
 
-app.use(cookieParser(SESSION_SECRET));
-app.use(attachUser);
+async function shutdown(signal) {
+  if (shuttingDown) return;
 
-app.use(authRoutes);
-app.use(reportRoutes);
+  shuttingDown = true;
+  logger.info("shutting down", { signal });
 
-await connectDB();
+  stopSweeper();
 
-app.listen(PORT, () => {
-  console.log(
-    `Server running at http://localhost:${PORT}`
-  );
+  const forced = setTimeout(() => {
+    logger.error("shutdown timed out, exiting");
+    process.exit(1);
+  }, 10000);
+
+  forced.unref();
+
+  try {
+    await new Promise((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+
+    await mongoose.connection.close();
+
+    logger.info("shutdown complete");
+    process.exit(0);
+  } catch (error) {
+    logger.error("shutdown failed", { error });
+    process.exit(1);
+  }
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+// A rejection nobody handled has already left the app in a state it did not
+// plan for. Log it loudly and let the supervisor restart a clean process
+// rather than serve from a half-broken one.
+process.on("unhandledRejection", (error) => {
+  logger.error("unhandled rejection", { error });
+  shutdown("unhandledRejection");
 });

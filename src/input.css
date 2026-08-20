@@ -5,3 +5,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* The hidden attribute is how JavaScript shows and hides the live-update
+     banner. Without this it loses to any display utility on the same element
+     (the banner is also a flex row), and the banner would be visible from
+     first paint. !important keeps the attribute authoritative regardless of
+     which utilities a future element happens to carry. */
+  [hidden] {
+    display: none !important;
+  }
+}

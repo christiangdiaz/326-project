@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title><%= status %> - Maintenance Report Board</title>
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+  <%- include("partials/header") %>
+
+  <main id="main" tabindex="-1" class="mx-auto max-w-md p-4 sm:p-8">
+    <h1 class="mb-4 text-3xl font-bold">
+      <%= status === 404 ? "Page not found" : "Something went wrong" %>
+    </h1>
+
+    <p role="alert" class="mb-6 rounded bg-red-100 p-3 text-red-800">
+      <%= message %>
+    </p>
+
+    <a
+      href="/reports"
+      class="font-medium text-blue-800 underline hover:text-blue-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+    >
+      Back to the report board
+    </a>
+  </main>
+</body>
+</html>

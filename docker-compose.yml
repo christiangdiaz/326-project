@@ -1,0 +1,43 @@
+# Brings up the app and its database together, so a clone is one command from
+# running rather than "install MongoDB first".
+#
+#   SESSION_SECRET=$(node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))") docker compose up
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      # Published so `npm run seed` and a local `npm run dev` can reach the
+      # same database the container app uses.
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://mongo:27017/maintenance_reports
+      # No default on purpose: the app refuses to start in production without
+      # it, and a default here would be exactly the committed secret this
+      # setup exists to avoid.
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET before starting}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+    depends_on:
+      mongo:
+        # Waits for a database that answers, not just a container that exists;
+        # connectDB exits the process if its first connection fails.
+        condition: service_healthy
+
+volumes:
+  mongo-data:
